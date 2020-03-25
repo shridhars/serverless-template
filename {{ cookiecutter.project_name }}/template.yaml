@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+    {{ cookiecutter.project_name }}
+    
+    {{ cookiecutter.project_short_description }}
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 10
+Parameters:
+  ProductName:
+    Type: String
+    Default: {{ cookiecutter.project_name }}
+  Envtype:
+    Type: String
+    Default: local
+    AllowedValues:
+      - test
+      - local
+      - prod
+  fnName:
+    Type: String
+    Default: {{ cookiecutter.function_name }}
+Resources:
+  lambdafunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: app/build/
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.6
+      FunctionName: !Sub "${fnName}-${Envtype}"
+      Role: !GetAtt IAMRolelambda.Arn
+      AutoPublishAlias: !Ref Envtype
+{%- if cookiecutter.include_apigw == "y" %}
+      Events:
+        CatchAll:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /v1/{any_argument+}
+            Method: any {% endif %}
+  IAMRolelambda:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "lambda.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Description: Role for lambda.
+      Path: "/"
+      RoleName: !Join [ "-", [ "rl", !Ref RegPrefix, !Sub "${fnName}-${Envtype}" ]]
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole  
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+{% if cookiecutter.include_apigw == "y"%}
+  ApigwURL:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Envtype}/v1/"
+{%- endif %}
+  lambdafunctionArn:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt lambdafunction.Arn
+  
