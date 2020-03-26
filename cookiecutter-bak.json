@@ -1,0 +1,9 @@
+{
+    "project_name": "Name of the project",
+    "project_short_description": "A short description of the project",
+    "function_name": "Enter lambda fuction name",
+    "include_apigw": "y",
+    "include_experimental_make": "n",
+    "include_safe_deployment": "n",
+    "include_xray": "n"
+}
